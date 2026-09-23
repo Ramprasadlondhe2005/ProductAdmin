@@ -115,7 +115,10 @@ Designed with production-grade craftsmanship, responsive design (Desktop table +
 
 ---
 
-## 🤖 AI Usage Disclosure & Live Walkthrough Readiness
+## 🧩 Problem Faced & How I Fixed It
 
-- **AI Assistance**: AI was utilized to rapidly prototype UI boilerplate, format icons, and generate clean TypeScript interface schemas.
-- **Code Ownership**: Every line of architecture—including the Axios interceptors, AbortController cancellation logic, custom pagination state machine, URL searchParam synchronizer, and optimistic local store—has been reviewed, understood, and tested for live walkthrough and code modifications.
+One problem I faced was handling multiple search requests when the user typed quickly. A previous request could finish after the latest request and incorrectly replace the newer search results.
+
+I fixed this by using a debounced search input together with `AbortController`. The search API is called only after the user stops typing for a short period, and the previous in-flight request is cancelled when a new search starts. This ensures that older search results cannot overwrite the latest results.
+
+I also tested this scenario using DummyJSON's `delay` parameter to simulate slow API responses.
