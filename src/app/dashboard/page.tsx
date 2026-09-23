@@ -12,6 +12,7 @@ import ProductCardGrid from '@/components/products/ProductCardGrid';
 import ProductPagination from '@/components/products/ProductPagination';
 import ProductModal from '@/components/products/ProductModal';
 import DeleteConfirmModal from '@/components/products/DeleteConfirmModal';
+import ToastContainer, { ToastMessage } from '@/components/ui/Toast';
 import EmptyState from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ui/ErrorState';
 import Loader from '@/components/ui/Loader';
@@ -42,6 +43,22 @@ function DashboardContent() {
   const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+
+  // Toast notifications state
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const addToast = (
+    type: 'success' | 'danger' | 'info',
+    title: string,
+    description?: string
+  ) => {
+    const id = `toast-${Date.now()}-${Math.random()}`;
+    setToasts((prev) => [...prev, { id, type, title, description }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   // Ref to hold current AbortController for race condition prevention
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -222,6 +239,11 @@ function DashboardContent() {
         // Fallback to local update
       }
       updateLocalProduct(productToEdit.id, formData);
+      addToast(
+        'success',
+        'Product Updated',
+        `"${formData.title}" has been updated successfully.`
+      );
     } else {
       try {
         await productService.addProduct(formData);
@@ -229,6 +251,11 @@ function DashboardContent() {
         // Fallback to local update
       }
       addLocalProduct(formData);
+      addToast(
+        'success',
+        'Product Added',
+        `"${formData.title}" has been added to inventory.`
+      );
     }
 
     fetchProducts();
@@ -242,11 +269,19 @@ function DashboardContent() {
     }
     deleteLocalProduct(product.id);
     setProductToDelete(null);
+    addToast(
+      'danger',
+      'Product Deleted',
+      `"${product.title}" was removed from inventory.`
+    );
     fetchProducts();
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col relative">
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onDismiss={removeToast} />
+
       {/* Top Navbar */}
       <Navbar onAddProductClick={handleOpenAddModal} />
 
