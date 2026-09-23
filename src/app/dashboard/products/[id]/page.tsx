@@ -25,7 +25,7 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const id = params?.id as string;
 
-  const { getLocalProductById } = useProductLocalStore();
+  const { getLocalProductById, isProductDeleted, getEditedProduct } = useProductLocalStore();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [activeImage, setActiveImage] = useState<string>('');
@@ -38,6 +38,13 @@ export default function ProductDetailPage() {
     let isMounted = true;
     setIsLoading(true);
     setIsNotFound(false);
+
+    // If product was locally deleted, trigger not-found state immediately
+    if (isProductDeleted(id)) {
+      setIsLoading(false);
+      setIsNotFound(true);
+      return;
+    }
 
     // First check local optimistic store if created locally
     const localProduct = getLocalProductById(id);
@@ -53,8 +60,10 @@ export default function ProductDetailPage() {
       .getProductById(id)
       .then((data) => {
         if (isMounted) {
-          setProduct(data);
-          setActiveImage(data.thumbnail || data.images?.[0] || '');
+          const localEdits = getEditedProduct(id);
+          const finalProduct = localEdits ? { ...data, ...localEdits } : data;
+          setProduct(finalProduct);
+          setActiveImage(finalProduct.thumbnail || finalProduct.images?.[0] || '');
         }
       })
       .catch(() => {
@@ -69,7 +78,7 @@ export default function ProductDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [id, getLocalProductById]);
+  }, [id, getLocalProductById, isProductDeleted, getEditedProduct]);
 
   return (
     <ProtectedRoute>

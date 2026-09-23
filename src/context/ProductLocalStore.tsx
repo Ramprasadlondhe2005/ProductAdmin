@@ -12,9 +12,12 @@ interface ProductLocalStoreType {
   deleteLocalProduct: (id: string | number) => void;
   mergeWithApiProducts: (
     apiProducts: Product[],
-    total: number
+    total: number,
+    filters?: { search?: string; category?: string }
   ) => { products: Product[]; total: number };
   getLocalProductById: (id: string | number) => Product | null;
+  isProductDeleted: (id: string | number) => boolean;
+  getEditedProduct: (id: string | number) => Partial<Product> | null;
 }
 
 const ProductLocalStoreContext = createContext<ProductLocalStoreType | undefined>(
@@ -129,40 +132,68 @@ export const ProductLocalStoreProvider: React.FC<{ children: React.ReactNode }> 
     } else {
       const nextDeleted = new Set(deletedProductIds);
       nextDeleted.add(id);
+      nextDeleted.add(String(id));
       setDeletedProductIds(nextDeleted);
       saveToSessionStorage(addedProducts, editedProducts, nextDeleted);
     }
   };
 
+  const isProductDeleted = (id: string | number): boolean => {
+    return deletedProductIds.has(id) || deletedProductIds.has(String(id));
+  };
+
+  const getEditedProduct = (id: string | number): Partial<Product> | null => {
+    return editedProducts[id] || editedProducts[String(id)] || null;
+  };
+
   const getLocalProductById = (id: string | number): Product | null => {
-    // Check if it's an added product
+    if (isProductDeleted(id)) return null;
     const added = addedProducts.find((p) => String(p.id) === String(id));
-    if (added) return added;
+    if (added) {
+      const edits = getEditedProduct(id);
+      return edits ? { ...added, ...edits } : added;
+    }
     return null;
   };
 
   const mergeWithApiProducts = (
     apiProducts: Product[],
-    total: number
+    total: number,
+    filters?: { search?: string; category?: string }
   ): { products: Product[]; total: number } => {
     // 1. Filter out deleted products
     let filtered = apiProducts.filter(
-      (p) => !deletedProductIds.has(p.id) && !deletedProductIds.has(String(p.id))
+      (p) => !isProductDeleted(p.id)
     );
 
     // 2. Apply edited properties to API products
     filtered = filtered.map((p) => {
-      const edits = editedProducts[p.id] || editedProducts[String(p.id)];
+      const edits = getEditedProduct(p.id);
       if (edits) {
         return { ...p, ...edits };
       }
       return p;
     });
 
-    // 3. Prepend added products if on first view or search match
-    const activeAdded = addedProducts.filter(
-      (p) => !deletedProductIds.has(p.id) && !deletedProductIds.has(String(p.id))
+    // 3. Filter added products according to search/category filters
+    let activeAdded = addedProducts.filter(
+      (p) => !isProductDeleted(p.id)
     );
+
+    if (filters?.search && filters.search.trim() !== '') {
+      const q = filters.search.trim().toLowerCase();
+      activeAdded = activeAdded.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          (p.brand && p.brand.toLowerCase().includes(q)) ||
+          (p.description && p.description.toLowerCase().includes(q))
+      );
+    } else if (filters?.category && filters.category.trim() !== '') {
+      const cat = filters.category.trim().toLowerCase();
+      activeAdded = activeAdded.filter(
+        (p) => p.category.toLowerCase() === cat
+      );
+    }
 
     const adjustedTotal = total + activeAdded.length - deletedProductIds.size;
 
@@ -183,6 +214,8 @@ export const ProductLocalStoreProvider: React.FC<{ children: React.ReactNode }> 
         deleteLocalProduct,
         mergeWithApiProducts,
         getLocalProductById,
+        isProductDeleted,
+        getEditedProduct,
       }}
     >
       {children}
