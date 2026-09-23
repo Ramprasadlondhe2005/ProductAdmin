@@ -35,13 +35,15 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Load categories for selector
+  // Load categories for selector only when modal opens
   useEffect(() => {
-    productService
-      .getCategories()
-      .then((data) => setCategories(data))
-      .catch(() => {});
-  }, []);
+    if (isOpen && categories.length === 0) {
+      productService
+        .getCategories()
+        .then((data) => setCategories(data))
+        .catch(() => {});
+    }
+  }, [isOpen, categories.length]);
 
   // Populate form data if editing
   useEffect(() => {

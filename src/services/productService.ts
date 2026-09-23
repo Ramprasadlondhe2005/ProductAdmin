@@ -7,6 +7,8 @@ import {
   ProductQueryParams,
 } from '@/types/product';
 
+let categoriesCache: CategoryItem[] | null = null;
+
 export const productService = {
   /**
    * Fetch products based on pagination, search, category, and sorting parameters.
@@ -55,14 +57,16 @@ export const productService = {
   },
 
   /**
-   * Fetch all product categories
+   * Fetch all product categories with in-memory caching
    */
   async getCategories(): Promise<CategoryItem[]> {
+    if (categoriesCache) return categoriesCache;
+
     const response = await apiClient.get('/products/categories');
     const data = response.data;
 
     if (Array.isArray(data)) {
-      return data.map((item) => {
+      const formatted = data.map((item) => {
         if (typeof item === 'string') {
           return {
             slug: item,
@@ -78,6 +82,8 @@ export const productService = {
         }
         return { slug: String(item), name: String(item), url: '#' };
       });
+      categoriesCache = formatted;
+      return formatted;
     }
 
     return [];
