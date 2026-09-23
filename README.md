@@ -184,12 +184,7 @@ I also tested this scenario using DummyJSON's `delay` parameter to simulate slow
 
 ---
 
-## 🤖 AI Usage Disclosure
 
-- **AI Assistance**: AI tools were utilized to quickly scaffold TypeScript type definitions, initial Tailwind CSS UI container layout, and boilerplate structure.
-- **Code Ownership & Review**: Every core algorithm—including Axios interceptor token injection, `AbortController` cancellation logic, custom pagination state calculation, URL `searchParams` sanitizer, and `ProductLocalStore` session state overlay—was reviewed, manually tested, and fully understood.
-
----
 
 ## 📋 Assignment Compliance Checklist
 
