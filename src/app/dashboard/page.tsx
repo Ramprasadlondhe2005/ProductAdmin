@@ -56,8 +56,13 @@ function DashboardContent() {
   const skip = (currentPage - 1) * limit;
   const search = searchParams.get('search') || '';
   const category = searchParams.get('category') || '';
-  const sortBy = searchParams.get('sortBy') || '';
-  const order = (searchParams.get('order') as 'asc' | 'desc') || 'asc';
+  
+  const rawSortBy = searchParams.get('sortBy') || '';
+  const sortBy = ['price', 'rating', 'title'].includes(rawSortBy) ? rawSortBy : '';
+
+  const rawOrder = searchParams.get('order') || '';
+  const order: 'asc' | 'desc' = rawOrder === 'desc' ? 'desc' : 'asc';
+
   const delayParam = parseInt(searchParams.get('delay') || '0', 10);
 
   // Helper to update URL search parameters seamlessly
@@ -105,27 +110,36 @@ function DashboardContent() {
         controller.signal
       );
 
-      // Merge API results with optimistic local store additions/edits/deletions
-      const { products: merged, total: adjustedTotal } = mergeWithApiProducts(
-        response.products,
-        response.total
-      );
+      // Only update state if this is still the active request
+      if (abortControllerRef.current === controller) {
+        // Merge API results with optimistic local store additions/edits/deletions
+        const { products: merged, total: adjustedTotal } = mergeWithApiProducts(
+          response.products,
+          response.total,
+          { search, category }
+        );
 
-      setProducts(merged);
-      setTotalCount(adjustedTotal);
+        setProducts(merged);
+        setTotalCount(adjustedTotal);
+      }
     } catch (err: unknown) {
       // Ignore abort/cancel errors (from AbortController signal or axios.isCancel)
       if (axios.isCancel(err)) return;
       if (err instanceof Error && (err.name === 'CanceledError' || err.name === 'AbortError')) {
         return;
       }
-      setErrorMsg(
-        err instanceof Error
-          ? err.message
-          : 'Failed to load products from server.'
-      );
+      if (abortControllerRef.current === controller) {
+        setErrorMsg(
+          err instanceof Error
+            ? err.message
+            : 'Failed to load products from server.'
+        );
+      }
     } finally {
-      setIsLoading(false);
+      // Only set loading to false if this is still the active request
+      if (abortControllerRef.current === controller) {
+        setIsLoading(false);
+      }
     }
   }, [
     limit,
