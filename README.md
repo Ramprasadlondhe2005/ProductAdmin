@@ -8,8 +8,8 @@ Designed with production-grade craftsmanship, responsive layout (Desktop table +
 
 ## 🌐 Live Demo
 
-[Live Vercel / Netlify Deployment](https://product-admin-dashboard-demo.vercel.app)  
-*(Note: Replace this URL with your actual deployed Vercel/Netlify link after pushing to deployment)*
+product-admin-puce.vercel.app
+
 
 ---
 
